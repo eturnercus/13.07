@@ -19,7 +19,7 @@ from i18n import I18n
 from ui_theme import apply_theme
 from widgets import add_text_context_menu
 
-APP_VERSION = "1.3.2"
+APP_VERSION = "0.1"
 LABEL_COLUMN_MINSIZE = 132
 
 

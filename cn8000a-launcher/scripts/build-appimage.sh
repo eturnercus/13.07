@@ -65,5 +65,5 @@ if [[ ! -x "${APPIMAGE_TOOL}" ]]; then
 fi
 
 mkdir -p "${ROOT_DIR}/dist"
-ARCH=x86_64 VERSION=1.3.2 "${APPIMAGE_TOOL}" "${APPDIR}" "${ROOT_DIR}/dist/CN8000A-KVM-x86_64.AppImage"
+ARCH=x86_64 VERSION=0.1 "${APPIMAGE_TOOL}" "${APPDIR}" "${ROOT_DIR}/dist/CN8000A-KVM-x86_64.AppImage"
 echo "Built ${ROOT_DIR}/dist/CN8000A-KVM-x86_64.AppImage"

@@ -78,7 +78,7 @@ class KvmHttpClient:
 
         headers = {
             "Host": self.hostname,
-            "User-Agent": "CN8000A-Portable-Launcher/1.3",
+            "User-Agent": "CN8000A-Portable-Launcher/0.1",
             "Connection": "close",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
