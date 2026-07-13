@@ -19,7 +19,7 @@ from i18n import I18n
 from ui_theme import apply_theme
 from widgets import add_text_context_menu
 
-APP_VERSION = "1.3.1"
+APP_VERSION = "1.3.2"
 LABEL_COLUMN_MINSIZE = 132
 
 
@@ -141,7 +141,7 @@ class LauncherApp(tk.Tk):
 
         self._add_field(form, 0, self.i18n.t("field.host"), self.host_var)
         self._add_field(form, 1, self.i18n.t("field.user"), self.user_var)
-        self._add_field(form, 2, self.i18n.t("field.password"), self.pass_var, show="•")
+        self._add_field(form, 2, self.i18n.t("field.password"), self.pass_var, show="*")
 
     def _add_field(
         self,
@@ -232,13 +232,13 @@ class LauncherApp(tk.Tk):
             save_profiles(host, user, self.i18n.lang)
             launch_viewer(tmp, self.i18n)
             self.after(0, lambda: self.set_busy(False, "status.launched"))
-        except (Cn8000Error, OSError, subprocess.SubprocessError) as exc:
-            msg = format_error(self.i18n, exc)
+        except Exception as exc:
+            msg = format_error(self.i18n, exc) if isinstance(exc, Cn8000Error) else str(exc)
             self.after(
                 0,
-                lambda: (
+                lambda m=msg: (
                     self.set_busy(False, "status.error", error=True),
-                    messagebox.showerror(self.i18n.t("app.title"), msg),
+                    messagebox.showerror(self.i18n.t("app.title"), m),
                 ),
             )
 

@@ -4,12 +4,12 @@
 
 ## Скачать
 
-**Последний релиз:** [v1.3.1](https://github.com/eturnercus/13.07/releases/tag/v1.3.1)
+**Последний релиз:** [v1.3.2](https://github.com/eturnercus/13.07/releases/tag/v1.3.2)
 
 | Платформа | Файл | Как запустить |
 |-----------|------|---------------|
-| **Linux x86_64** | [CN8000A-KVM-x86_64.AppImage](https://github.com/eturnercus/13.07/releases/download/v1.3.1/CN8000A-KVM-x86_64.AppImage) | `chmod +x CN8000A-KVM-x86_64.AppImage && ./CN8000A-KVM-x86_64.AppImage` |
-| **Windows x64** | [CN8000A-KVM-Portable-Win64.zip](https://github.com/eturnercus/13.07/releases/download/v1.3.1/CN8000A-KVM-Portable-Win64.zip) | Распаковать → запустить `CN8000A-KVM.bat` |
+| **Linux x86_64** | [CN8000A-KVM-x86_64.AppImage](https://github.com/eturnercus/13.07/releases/download/v1.3.2/CN8000A-KVM-x86_64.AppImage) | `chmod +x CN8000A-KVM-x86_64.AppImage && ./CN8000A-KVM-x86_64.AppImage` |
+| **Windows x64** | [CN8000A-KVM-Portable-Win64.zip](https://github.com/eturnercus/13.07/releases/download/v1.3.2/CN8000A-KVM-Portable-Win64.zip) | Распаковать → запустить `CN8000A-KVM.bat` |
 
 > **Полностью портативно** — Python, Java 8 и IcedTea-Web уже внутри. Ничего ставить не нужно.
 
@@ -36,12 +36,12 @@ chmod +x CN8000A-KVM-x86_64.AppImage
 
 Python и Java в систему ставить не нужно — всё уже внутри архива.
 
-## Что нового в v1.3.0
+## Что нового в v1.3.2
 
-- Исправлена **кириллица** — текст больше не разъезжается по буквам
-- Все строки вынесены в **файлы языка** (`i18n/languages/*.json`, UTF-8)
-- Можно добавить свой перевод или переключить язык через `CN8000A_LANG=en`
-- Возвращён **поясняющий текст** внизу окна
+- **Подключение к KVM** — исправлен протокол (HTTP/1.0, CN8000 не принимает HTTP/1.1 POST)
+- **Пароль** — маскировка `*` вместо символов ® (битый Unicode)
+- **Логин** — `+` в пароле больше не ломается (%2B)
+- Ошибки больше не оставляют «бесконечное подключение»
 
 ## Что внутри
 

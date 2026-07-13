@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import re
-import ssl
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 from dataclasses import dataclass
 from typing import Literal
+
+from kvm_transport import KvmHttpClient, KvmHttpError, parse_host
 
 
 KvmType = Literal["old", "new"]
@@ -40,62 +39,22 @@ class JnlpError(Cn8000Error):
     """Не удалось получить JNLP-файл."""
 
 
-def _legacy_ssl_context() -> ssl.SSLContext:
-    ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
-    try:
-        ctx.set_ciphers("DEFAULT:@SECLEVEL=0")
-    except ssl.SSLError:
-        pass
-    if hasattr(ssl, "TLSVersion"):
-        ctx.minimum_version = ssl.TLSVersion.TLSv1
-    return ctx
-
-
 def _request(
-    url: str,
+    client: KvmHttpClient,
+    path: str,
     *,
     data: bytes | None = None,
-    headers: dict[str, str] | None = None,
     cookie: str | None = None,
-    method: str | None = None,
-    timeout: float = 30.0,
+    method: str = "GET",
 ) -> tuple[bytes, dict[str, str]]:
-    hdrs = {
-        "User-Agent": "CN8000A-Portable-Launcher/1.3",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    }
-    if headers:
-        hdrs.update(headers)
-    if cookie:
-        hdrs["Cookie"] = cookie
-
-    req = urllib.request.Request(url, data=data, headers=hdrs, method=method)
     try:
-        with urllib.request.urlopen(req, context=_legacy_ssl_context(), timeout=timeout) as resp:
-            body = resp.read()
-            response_headers = {k.lower(): v for k, v in resp.headers.items()}
-            return body, response_headers
-    except urllib.error.HTTPError as exc:
-        body = exc.read()
-        response_headers = {k.lower(): v for k, v in exc.headers.items()}
-        return body, response_headers
-    except urllib.error.URLError as exc:
-        reason = getattr(exc.reason, "args", [str(exc.reason)])[0]
-        raise Cn8000Error("error.network", url=url, reason=str(reason)) from exc
+        return client.request(method, path, body=data, cookie=cookie)
+    except KvmHttpError as exc:
+        raise Cn8000Error("error.network", url=f"https://{client.hostname}{path}", reason=str(exc)) from exc
 
 
-def _site(host: str, *, https: bool = True) -> str:
-    host = host.strip()
-    if host.startswith("http://") or host.startswith("https://"):
-        return host.rstrip("/")
-    scheme = "https" if https else "http"
-    return f"{scheme}://{host}"
-
-
-def detect_kvm_type(site: str) -> tuple[KvmType, str | None]:
-    body, _ = _request(f"{site}/")
+def detect_kvm_type(client: KvmHttpClient) -> tuple[KvmType, str | None]:
+    body, _ = _request(client, "/")
     text = body.decode("utf-8", errors="replace")
     match = re.search(r'strURL.*\+\s*"/(\w+?)"', text)
     if match:
@@ -103,7 +62,7 @@ def detect_kvm_type(site: str) -> tuple[KvmType, str | None]:
     return "old", None
 
 
-def _login_old(site: str, username: str, password: str) -> str:
+def _login_old(client: KvmHttpClient, username: str, password: str) -> str:
     ts = time.strftime("%Y.%m.%d.%H.%M.%S.") + f"{int(time.time() * 1000)}000.-180"
     form = urllib.parse.urlencode(
         {
@@ -113,12 +72,7 @@ def _login_old(site: str, username: str, password: str) -> str:
             "curtime": ts,
         }
     ).encode("ascii")
-    body, _ = _request(
-        f"{site}/view.htm",
-        data=form,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        method="POST",
-    )
+    body, _ = _request(client, "/view.htm", data=form, method="POST")
     text = body.decode("utf-8", errors="replace")
     match = re.search(r"global_sessionpid='(\w+?)'", text)
     if not match:
@@ -126,38 +80,35 @@ def _login_old(site: str, username: str, password: str) -> str:
     return match.group(1)
 
 
-def _login_new(site: str, str_url: str, username: str, password: str, host: str) -> tuple[str, str]:
-    page_body, _ = _request(f"{site}/{str_url}")
+def _login_new(
+    client: KvmHttpClient,
+    str_url: str,
+    username: str,
+    password: str,
+    login_host: str,
+) -> str:
+    page_body, _ = _request(client, f"/{str_url}")
     page = page_body.decode("utf-8", errors="replace")
     tid_match = re.search(r'name="KVMIP_TARGETID" value="(\w+?)"', page)
     if not tid_match:
         raise LoginError("error.login.no_target")
     target_id = tid_match.group(1)
 
-    login_value = f"{username}+{password}+{host}+{target_id}"
-    form = urllib.parse.urlencode(
-        {
-            "KVMIP_GMTIME": str(int(time.time())),
-            "KVMIP_DIFFTIME": "420",
-            "KVMIP_LOGIN": login_value,
-            "KVMIP_TARGETID": target_id,
-        }
+    login_value = f"{username}+{password}+{login_host}+{target_id}"
+    form = (
+        f"KVMIP_GMTIME={int(time.time())}"
+        f"&KVMIP_DIFFTIME=420"
+        f"&KVMIP_LOGIN={login_value}"
+        f"&KVMIP_TARGETID={target_id}"
     ).encode("ascii")
 
-    _, headers = _request(
-        f"{site}/{str_url}",
-        data=form,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        method="POST",
-    )
-    set_cookie = headers.get("set-cookie", "")
-    sid_match = re.search(r"sid=(\S+)", set_cookie)
-    if not sid_match:
+    _, headers = _request(client, f"/{str_url}", data=form, method="POST")
+    sid = KvmHttpClient.extract_sid(headers)
+    if not sid:
         raise LoginError("error.login.no_cookie")
-    sid = sid_match.group(1).rstrip(";")
 
     xid = f"0.{int(time.time() * 1_000_000) % 10**17:017d}"
-    inquery_form = urllib.parse.urlencode(
+    inquery_body = urllib.parse.urlencode(
         {
             "/Inquery?update": "31",
             "com_common": "01",
@@ -165,34 +116,31 @@ def _login_new(site: str, str_url: str, username: str, password: str, host: str)
             "SID": sid,
         }
     ).encode("ascii")
-    _request(
-        f"{site}/Inquery",
-        data=inquery_form,
-        headers={"Content-Type": "application/x-www-form-urlencoded"},
-        cookie=f"sid={sid}",
-        method="POST",
-    )
-
-    return sid, f"{site}/Inquery.jnlp"
+    _request(client, "/Inquery", data=inquery_body, cookie=f"sid={sid}", method="POST")
+    return sid
 
 
 def fetch_jnlp(host: str, username: str, password: str) -> tuple[bytes, SessionInfo]:
-    site = _site(host)
-    kvm_type, str_url = detect_kvm_type(site)
+    login_host, _base = parse_host(host)
+    client = KvmHttpClient(login_host)
+    kvm_type, str_url = detect_kvm_type(client)
 
     if kvm_type == "old":
-        session_id = _login_old(site, username, password)
-        jnlp_url = f"{site}/JavaClient.jnlp?pid={session_id}"
-        body, _ = _request(jnlp_url)
-        info = SessionInfo(kvm_type=kvm_type, jnlp_url=jnlp_url, session_id=session_id)
+        session_id = _login_old(client, username, password)
+        body, _ = _request(client, f"/JavaClient.jnlp?pid={session_id}")
+        info = SessionInfo(
+            kvm_type=kvm_type,
+            jnlp_url=f"https://{login_host}/JavaClient.jnlp?pid={session_id}",
+            session_id=session_id,
+        )
         return body, info
 
     assert str_url is not None
-    session_id, jnlp_url = _login_new(site, str_url, username, password, host)
-    body, _ = _request(jnlp_url, cookie=f"sid={session_id}")
+    session_id = _login_new(client, str_url, username, password, login_host)
+    body, _ = _request(client, "/Inquery.jnlp", cookie=f"sid={session_id}")
     info = SessionInfo(
         kvm_type=kvm_type,
-        jnlp_url=jnlp_url,
+        jnlp_url=f"https://{login_host}/Inquery.jnlp",
         session_id=session_id,
         str_url=str_url,
     )
