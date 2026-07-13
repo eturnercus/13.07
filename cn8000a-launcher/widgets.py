@@ -84,10 +84,12 @@ def make_labeled_entry(
     row: int,
     textvariable: tk.StringVar,
     show: str | None = None,
-    width: int = 36,
+    width: int = 34,
 ) -> ttk.Entry:
-    ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", padx=(0, 10), pady=6)
+    ttk.Label(parent, text=label, style="Field.TLabel").grid(
+        row=row, column=0, sticky="e", padx=(0, 12), pady=7
+    )
     entry = ttk.Entry(parent, textvariable=textvariable, width=width, show=show or "")
-    entry.grid(row=row, column=1, sticky="ew", pady=6)
+    entry.grid(row=row, column=1, sticky="ew", pady=7)
     add_text_context_menu(entry)
     return entry

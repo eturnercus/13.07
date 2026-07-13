@@ -4,12 +4,12 @@
 
 ## Скачать
 
-**Последний релиз:** [v1.2.0](https://github.com/eturnercus/13.07/releases/tag/v1.2.0)
+**Последний релиз:** [v1.2.1](https://github.com/eturnercus/13.07/releases/tag/v1.2.1)
 
 | Платформа | Файл | Как запустить |
 |-----------|------|---------------|
-| **Linux x86_64** | [CN8000A-KVM-x86_64.AppImage](https://github.com/eturnercus/13.07/releases/download/v1.2.0/CN8000A-KVM-x86_64.AppImage) | `chmod +x CN8000A-KVM-x86_64.AppImage && ./CN8000A-KVM-x86_64.AppImage` |
-| **Windows x64** | [CN8000A-KVM-Portable-Win64.zip](https://github.com/eturnercus/13.07/releases/download/v1.2.0/CN8000A-KVM-Portable-Win64.zip) | Распаковать → запустить `CN8000A-KVM.bat` |
+| **Linux x86_64** | [CN8000A-KVM-x86_64.AppImage](https://github.com/eturnercus/13.07/releases/download/v1.2.1/CN8000A-KVM-x86_64.AppImage) | `chmod +x CN8000A-KVM-x86_64.AppImage && ./CN8000A-KVM-x86_64.AppImage` |
+| **Windows x64** | [CN8000A-KVM-Portable-Win64.zip](https://github.com/eturnercus/13.07/releases/download/v1.2.1/CN8000A-KVM-Portable-Win64.zip) | Распаковать → запустить `CN8000A-KVM.bat` |
 
 > **Полностью портативно** — Python, Java 8 и IcedTea-Web уже внутри. Ничего ставить не нужно.
 
@@ -36,12 +36,11 @@ chmod +x CN8000A-KVM-x86_64.AppImage
 
 Python и Java в систему ставить не нужно — всё уже внутри архива.
 
-## Что нового в v1.2.0
+## Что нового в v1.2.1
 
-- Полностью **русский интерфейс** лаунчера
-- **ПКМ и Ctrl+C/V/X** в полях ввода (копировать / вставить / вырезать)
-- **Иконка приложения** в окне и в AppImage
-- Русская локаль для Java-вьюера ATEN
+- Нормальные **пропорциональные шрифты** на Linux и Windows (без «печатной машинки»)
+- Чище **вёрстка**: иконка, выровненные поля, одна кнопка, без лишнего текста внизу
+- ПКМ и Ctrl+C/V в полях ввода по-прежнему работают
 
 ## Что внутри
 

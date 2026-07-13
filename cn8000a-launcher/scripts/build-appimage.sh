@@ -18,7 +18,7 @@ fi
 rm -rf "${APPDIR}"
 mkdir -p "${APPDIR}/usr/bin" "${APP_PAYLOAD}"
 
-cp -a "${ROOT_DIR}/launcher.py" "${ROOT_DIR}/cn8000_client.py" "${ROOT_DIR}/widgets.py" "${APP_PAYLOAD}/"
+cp -a "${ROOT_DIR}/launcher.py" "${ROOT_DIR}/cn8000_client.py" "${ROOT_DIR}/widgets.py" "${ROOT_DIR}/ui_theme.py" "${APP_PAYLOAD}/"
 cp -a "${ROOT_DIR}/resources" "${APP_PAYLOAD}/"
 cp -a "${ROOT_DIR}/runtime" "${APP_PAYLOAD}/runtime"
 cp -a "${ROOT_DIR}/python-linux" "${APP_PAYLOAD}/python"
@@ -64,5 +64,5 @@ if [[ ! -x "${APPIMAGE_TOOL}" ]]; then
 fi
 
 mkdir -p "${ROOT_DIR}/dist"
-ARCH=x86_64 VERSION=1.2.0 "${APPIMAGE_TOOL}" "${APPDIR}" "${ROOT_DIR}/dist/CN8000A-KVM-x86_64.AppImage"
+ARCH=x86_64 VERSION=1.2.1 "${APPIMAGE_TOOL}" "${APPDIR}" "${ROOT_DIR}/dist/CN8000A-KVM-x86_64.AppImage"
 echo "Built ${ROOT_DIR}/dist/CN8000A-KVM-x86_64.AppImage"
