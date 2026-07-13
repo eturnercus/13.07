@@ -1,0 +1,14 @@
+# Legacy crypto overrides for ATEN CN8000A firmware.
+# Applied via: javaws -J-Djava.security.properties=.../java.security.legacy
+#
+# WARNING: weak algorithms are enabled only for the isolated bundled JRE.
+
+security.overridePropertiesFile=true
+
+jdk.tls.disabledAlgorithms=SSLv3, RC4, DES, \
+    DH keySize < 512, EC keySize < 112, anon, NULL
+
+jdk.certpath.disabledAlgorithms=MD2
+
+jdk.jar.disabledAlgorithms=MD2, RSA keySize < 512, \
+    DSA keySize < 512
