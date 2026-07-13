@@ -1,5 +1,6 @@
 .cache/
 runtime/
+runtime-win/
 build/
 dist/
 __pycache__/
