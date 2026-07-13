@@ -6,14 +6,14 @@
 
 ## Скачать
 
-**Последний релиз:** [v1.0.0](https://github.com/eturnercus/13.07/releases/tag/v1.0.0)
+**Последний релиз:** [v1.1.0](https://github.com/eturnercus/13.07/releases/tag/v1.1.0)
 
 | Платформа | Файл | Как запустить |
 |-----------|------|---------------|
-| **Linux x86_64** | [CN8000A-KVM-x86_64.AppImage](https://github.com/eturnercus/13.07/releases/download/v1.0.0/CN8000A-KVM-x86_64.AppImage) | `chmod +x CN8000A-KVM-x86_64.AppImage && ./CN8000A-KVM-x86_64.AppImage` |
-| **Windows x64** | [CN8000A-KVM-Portable-Win64.zip](https://github.com/eturnercus/13.07/releases/download/v1.0.0/CN8000A-KVM-Portable-Win64.zip) | Распаковать → запустить `CN8000A-KVM.bat` |
+| **Linux x86_64** | [CN8000A-KVM-x86_64.AppImage](https://github.com/eturnercus/13.07/releases/download/v1.1.0/CN8000A-KVM-x86_64.AppImage) | `chmod +x CN8000A-KVM-x86_64.AppImage && ./CN8000A-KVM-x86_64.AppImage` |
+| **Windows x64** | [CN8000A-KVM-Portable-Win64.zip](https://github.com/eturnercus/13.07/releases/download/v1.1.0/CN8000A-KVM-Portable-Win64.zip) | Распаковать → запустить `CN8000A-KVM.bat` |
 
-> Установка не нужна: скачали, распаковали (или сделали AppImage исполняемым) — и запускаете.
+> **Полностью портативно** — Python, Java 8 и IcedTea-Web уже внутри. Ничего ставить не нужно.
 
 ## Быстрый старт
 
@@ -34,10 +34,9 @@ chmod +x CN8000A-KVM-x86_64.AppImage
 ### Windows
 
 1. Распакуйте `CN8000A-KVM-Portable-Win64.zip`.
-2. Убедитесь, что установлен **Python 3** с модулем **tkinter** (идёт с [python.org](https://www.python.org/downloads/)).
-3. Запустите `CN8000A-KVM.bat`.
+2. Запустите `CN8000A-KVM.bat`.
 
-Java в систему ставить не нужно — JRE 8 уже внутри пакета.
+Python и Java в систему ставить не нужно — всё уже внутри архива.
 
 ## Что внутри
 

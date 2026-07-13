@@ -16,7 +16,7 @@ from tkinter import messagebox, ttk
 from cn8000_client import Cn8000Error, fetch_jnlp, validate_jnlp
 
 APP_NAME = "CN8000A KVM Launcher"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.1.0"
 
 
 def app_root() -> Path:

@@ -22,6 +22,10 @@ download() {
   fi
 }
 
+if [[ ! -x "${ROOT_DIR}/python-win/python.exe" ]]; then
+  "${ROOT_DIR}/scripts/download-python-runtime.sh" windows
+fi
+
 JRE_ZIP="${CACHE_DIR}/temurin8-jre-windows.zip"
 ITW_ZIP="${CACHE_DIR}/icedtea-web-win.zip"
 download "${TEMURIN_API}/windows/x64/jre/hotspot/normal/eclipse?project=jdk" "${JRE_ZIP}"
@@ -51,6 +55,7 @@ EOF
 cp "${ROOT_DIR}/launcher.py" "${ROOT_DIR}/cn8000_client.py" "${DIST_DIR}/app/"
 cp -a "${ROOT_DIR}/resources" "${DIST_DIR}/app/"
 cp -a "${RUNTIME_DIR}" "${DIST_DIR}/app/runtime"
+cp -a "${ROOT_DIR}/python-win" "${DIST_DIR}/app/python"
 
 cat > "${DIST_DIR}/CN8000A-KVM.bat" <<'EOF'
 @echo off
@@ -58,7 +63,7 @@ setlocal
 set "APP_DIR=%~dp0app"
 set "PYTHONPATH=%APP_DIR%"
 cd /d "%APP_DIR%"
-py -3 "%APP_DIR%\launcher.py" 2>nul || python "%APP_DIR%\launcher.py"
+start "" "%APP_DIR%\python\pythonw.exe" "%APP_DIR%\launcher.py"
 EOF
 
 rm -f "${ZIP_OUT}"

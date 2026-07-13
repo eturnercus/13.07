@@ -6,17 +6,22 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="${ROOT_DIR}/build/appimage"
 APPDIR="${BUILD_DIR}/CN8000A-KVM.AppDir"
 APPIMAGE_TOOL="${ROOT_DIR}/.cache/appimagetool-x86_64.AppImage"
+APP_PAYLOAD="${APPDIR}/usr/lib/cn8000a"
 
 if [[ ! -d "${ROOT_DIR}/runtime/bin" ]]; then
   "${ROOT_DIR}/scripts/download-runtime.sh"
 fi
+if [[ ! -x "${ROOT_DIR}/python-linux/bin/python3" ]]; then
+  "${ROOT_DIR}/scripts/download-python-runtime.sh" linux
+fi
 
 rm -rf "${APPDIR}"
-mkdir -p "${APPDIR}/usr/bin" "${APPDIR}/usr/lib/cn8000a"
+mkdir -p "${APPDIR}/usr/bin" "${APP_PAYLOAD}"
 
-cp -a "${ROOT_DIR}/launcher.py" "${ROOT_DIR}/cn8000_client.py" "${APPDIR}/usr/lib/cn8000a/"
-cp -a "${ROOT_DIR}/resources" "${APPDIR}/usr/lib/cn8000a/"
-cp -a "${ROOT_DIR}/runtime" "${APPDIR}/usr/lib/cn8000a/runtime"
+cp -a "${ROOT_DIR}/launcher.py" "${ROOT_DIR}/cn8000_client.py" "${APP_PAYLOAD}/"
+cp -a "${ROOT_DIR}/resources" "${APP_PAYLOAD}/"
+cp -a "${ROOT_DIR}/runtime" "${APP_PAYLOAD}/runtime"
+cp -a "${ROOT_DIR}/python-linux" "${APP_PAYLOAD}/python"
 
 cat > "${APPDIR}/usr/bin/cn8000a-kvm" <<'EOF'
 #!/usr/bin/env bash
@@ -24,7 +29,7 @@ set -euo pipefail
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../lib/cn8000a" && pwd)"
 export PYTHONPATH="${APP_DIR}${PYTHONPATH:+:${PYTHONPATH}}"
 cd "${APP_DIR}"
-exec python3 "${APP_DIR}/launcher.py" "$@"
+exec "${APP_DIR}/python/bin/python3" "${APP_DIR}/launcher.py" "$@"
 EOF
 chmod +x "${APPDIR}/usr/bin/cn8000a-kvm"
 
@@ -46,7 +51,6 @@ Categories=Network;RemoteAccess;
 Terminal=false
 EOF
 
-# Simple placeholder icon (1x1 PNG) so appimagetool does not fail.
 python3 - <<'PY' "${APPDIR}/cn8000a-kvm.png"
 import base64, pathlib, sys
 png = base64.b64decode(
@@ -62,5 +66,5 @@ if [[ ! -x "${APPIMAGE_TOOL}" ]]; then
 fi
 
 mkdir -p "${ROOT_DIR}/dist"
-ARCH=x86_64 VERSION=1.0.0 "${APPIMAGE_TOOL}" "${APPDIR}" "${ROOT_DIR}/dist/CN8000A-KVM-x86_64.AppImage"
+ARCH=x86_64 VERSION=1.1.0 "${APPIMAGE_TOOL}" "${APPDIR}" "${ROOT_DIR}/dist/CN8000A-KVM-x86_64.AppImage"
 echo "Built ${ROOT_DIR}/dist/CN8000A-KVM-x86_64.AppImage"
