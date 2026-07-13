@@ -69,11 +69,11 @@ def save_profiles(host: str, user: str, language: str) -> None:
 def find_javaws() -> Path | None:
     bundled = runtime_dir()
     candidates = [
+        bundled / "icedtea-web" / "bin" / "javaws",
+        bundled / "icedtea-web" / "bin" / "javaws.exe",
         bundled / "bin" / "javaws",
         bundled / "bin" / "javaws.exe",
         bundled / "bin" / "javaws.cmd",
-        bundled / "icedtea-web" / "bin" / "javaws",
-        bundled / "icedtea-web" / "bin" / "javaws.exe",
     ]
     for candidate in candidates:
         if candidate.exists():
@@ -222,35 +222,40 @@ class LauncherApp(tk.Tk):
         ).start()
 
     def _connect_worker(self, host: str, user: str, password: str) -> None:
+        error_msg: str | None = None
         try:
             jnlp_bytes, _info = fetch_jnlp(host, user, password)
             validate_jnlp(jnlp_bytes)
 
-            tmp = Path(tempfile.gettempdir()) / f"cn8000a-{host.replace(':', '_')}.jnlp"
+            safe_host = host.replace("://", "_").replace("/", "_").replace(":", "_")
+            tmp = Path(tempfile.gettempdir()) / f"cn8000a-{safe_host}.jnlp"
             tmp.write_bytes(jnlp_bytes)
 
             save_profiles(host, user, self.i18n.lang)
             launch_viewer(tmp, self.i18n)
-            self.after(0, lambda: self.set_busy(False, "status.launched"))
         except Exception as exc:
-            msg = format_error(self.i18n, exc) if isinstance(exc, Cn8000Error) else str(exc)
-            self.after(
-                0,
-                lambda m=msg: (
-                    self.set_busy(False, "status.error", error=True),
-                    messagebox.showerror(self.i18n.t("app.title"), m),
-                ),
-            )
+            error_msg = format_error(self.i18n, exc) if isinstance(exc, Cn8000Error) else str(exc)
+        finally:
+            if error_msg:
+                self.after(
+                    0,
+                    lambda m=error_msg: (
+                        self.set_busy(False, "status.error", error=True),
+                        messagebox.showerror(self.i18n.t("app.title"), m),
+                    ),
+                )
+            else:
+                self.after(0, lambda: self.set_busy(False, "status.launched"))
 
 
 def launch_viewer(jnlp_file: Path, i18n: I18n) -> None:
     javaws = find_javaws()
     if javaws is None:
-        raise FileNotFoundError(i18n.t("error.javaws_missing"))
+        raise Cn8000Error("error.javaws_missing")
 
     security_override = resources_dir() / "java.security.legacy"
     env = os.environ.copy()
-    java_home = javaws.parent.parent
+    java_home = runtime_dir()
     env["JAVA_HOME"] = str(java_home)
     env["PATH"] = f"{java_home / 'bin'}{os.pathsep}{env.get('PATH', '')}"
 

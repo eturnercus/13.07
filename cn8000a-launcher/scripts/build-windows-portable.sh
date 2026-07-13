@@ -11,7 +11,12 @@ ZIP_OUT="${ROOT_DIR}/dist/CN8000A-KVM-Portable-Win64.zip"
 TEMURIN_API="https://api.adoptium.net/v3/binary/latest/8/ga"
 ITW_URL="https://github.com/AdoptOpenJDK/IcedTea-Web/releases/download/icedtea-web-1.8.8/icedtea-web-1.8.8.win.bin.zip"
 
-mkdir -p "${CACHE_DIR}" "${ROOT_DIR}/dist"
+mkdir -p "${ROOT_DIR}/dist"
+"${ROOT_DIR}/scripts/ensure-runtime.sh" 2>/dev/null || true
+# Linux build host: ensure Linux runtime; Windows ZIP uses runtime-win below.
+if [[ ! -x "${ROOT_DIR}/runtime/icedtea-web/bin/javaws" && ! -x "${ROOT_DIR}/runtime/bin/javaws" ]]; then
+  "${ROOT_DIR}/scripts/download-runtime.sh"
+fi
 
 download() {
   local url="$1"

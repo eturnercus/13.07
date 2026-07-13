@@ -8,12 +8,10 @@ APPDIR="${BUILD_DIR}/CN8000A-KVM.AppDir"
 APPIMAGE_TOOL="${ROOT_DIR}/.cache/appimagetool-x86_64.AppImage"
 APP_PAYLOAD="${APPDIR}/usr/lib/cn8000a"
 
-if [[ ! -d "${ROOT_DIR}/runtime/bin" ]]; then
-  "${ROOT_DIR}/scripts/download-runtime.sh"
-fi
 if [[ ! -x "${ROOT_DIR}/python-linux/bin/python3" ]]; then
   "${ROOT_DIR}/scripts/download-python-runtime.sh" linux
 fi
+"${ROOT_DIR}/scripts/ensure-runtime.sh"
 
 rm -rf "${APPDIR}"
 mkdir -p "${APPDIR}/usr/bin" "${APP_PAYLOAD}"
