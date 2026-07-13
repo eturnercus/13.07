@@ -1,0 +1,33 @@
+{
+  "app.title": "CN8000A KVM",
+  "app.subtitle": "Portable connection to ATEN CN8000A",
+
+  "field.host": "KVM address",
+  "field.user": "Username",
+  "field.password": "Password",
+
+  "button.connect": "Connect",
+
+  "status.ready": "Ready to connect",
+  "status.connecting": "Connecting to KVM…",
+  "status.launched": "Viewer launched",
+  "status.error": "Connection failed",
+
+  "footer.line1": "Uses the original ATEN Java viewer (JNLP) with bundled Java 8.",
+  "footer.line2": "Legacy TLS and ciphers are enabled only for KVM communication.",
+  "footer.line3": "In input fields: right-click or Ctrl+C / Ctrl+V to copy and paste.",
+
+  "menu.cut": "Cut",
+  "menu.copy": "Copy",
+  "menu.paste": "Paste",
+  "menu.select_all": "Select all",
+
+  "error.fill_fields": "Please enter KVM address, username, and password.",
+  "error.javaws_missing": "Bundled javaws not found. Rebuild the portable package.",
+
+  "error.network": "Network error while contacting {url}: {reason}",
+  "error.login.no_session": "Login failed: no session id from KVM. Check address, username, and password.",
+  "error.login.no_target": "Login failed: KVM target id not found on device page.",
+  "error.login.no_cookie": "Login failed: KVM did not return a session cookie.",
+  "error.jnlp.invalid": "Downloaded file does not look like an ATEN viewer JNLP document."
+}

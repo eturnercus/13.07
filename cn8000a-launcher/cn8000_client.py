@@ -1,8 +1,4 @@
-"""Клиент ATEN CN8000 / CN8000A: логин и скачивание JNLP.
-
-Адаптировано из https://github.com/sagb/cn8000-cli
-Поддерживает старые веб-интерфейсы CN8000 с TLS 1.0 и устаревшими шифрами.
-"""
+"""Клиент ATEN CN8000 / CN8000A: логин и скачивание JNLP."""
 
 from __future__ import annotations
 
@@ -29,6 +25,11 @@ class SessionInfo:
 
 class Cn8000Error(Exception):
     """Базовая ошибка клиента CN8000."""
+
+    def __init__(self, code: str, **params: str) -> None:
+        self.code = code
+        self.params = params
+        super().__init__(code)
 
 
 class LoginError(Cn8000Error):
@@ -62,7 +63,7 @@ def _request(
     timeout: float = 30.0,
 ) -> tuple[bytes, dict[str, str]]:
     hdrs = {
-        "User-Agent": "CN8000A-Portable-Launcher/1.2",
+        "User-Agent": "CN8000A-Portable-Launcher/1.3",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     }
     if headers:
@@ -81,7 +82,8 @@ def _request(
         response_headers = {k.lower(): v for k, v in exc.headers.items()}
         return body, response_headers
     except urllib.error.URLError as exc:
-        raise Cn8000Error(f"Сетевая ошибка при обращении к {url}: {exc.reason}") from exc
+        reason = getattr(exc.reason, "args", [str(exc.reason)])[0]
+        raise Cn8000Error("error.network", url=url, reason=str(reason)) from exc
 
 
 def _site(host: str, *, https: bool = True) -> str:
@@ -120,10 +122,7 @@ def _login_old(site: str, username: str, password: str) -> str:
     text = body.decode("utf-8", errors="replace")
     match = re.search(r"global_sessionpid='(\w+?)'", text)
     if not match:
-        raise LoginError(
-            "Не удалось войти: KVM не вернул идентификатор сессии. "
-            "Проверьте адрес, логин и пароль."
-        )
+        raise LoginError("error.login.no_session")
     return match.group(1)
 
 
@@ -132,7 +131,7 @@ def _login_new(site: str, str_url: str, username: str, password: str, host: str)
     page = page_body.decode("utf-8", errors="replace")
     tid_match = re.search(r'name="KVMIP_TARGETID" value="(\w+?)"', page)
     if not tid_match:
-        raise LoginError("Не удалось войти: на странице устройства не найден идентификатор KVM.")
+        raise LoginError("error.login.no_target")
     target_id = tid_match.group(1)
 
     login_value = f"{username}+{password}+{host}+{target_id}"
@@ -154,7 +153,7 @@ def _login_new(site: str, str_url: str, username: str, password: str, host: str)
     set_cookie = headers.get("set-cookie", "")
     sid_match = re.search(r"sid=(\S+)", set_cookie)
     if not sid_match:
-        raise LoginError("Не удалось войти: KVM не выдал cookie сессии.")
+        raise LoginError("error.login.no_cookie")
     sid = sid_match.group(1).rstrip(";")
 
     xid = f"0.{int(time.time() * 1_000_000) % 10**17:017d}"
@@ -178,7 +177,6 @@ def _login_new(site: str, str_url: str, username: str, password: str, host: str)
 
 
 def fetch_jnlp(host: str, username: str, password: str) -> tuple[bytes, SessionInfo]:
-    """Авторизация на CN8000(A) и скачивание JNLP вьюера."""
     site = _site(host)
     kvm_type, str_url = detect_kvm_type(site)
 
@@ -204,4 +202,4 @@ def fetch_jnlp(host: str, username: str, password: str) -> tuple[bytes, SessionI
 def validate_jnlp(content: bytes) -> None:
     text = content.decode("utf-8", errors="replace")
     if "<jnlp" not in text.lower():
-        raise JnlpError("Полученный файл не похож на JNLP-документ вьюера ATEN.")
+        raise JnlpError("error.jnlp.invalid")

@@ -1,0 +1,33 @@
+{
+  "app.title": "CN8000A KVM",
+  "app.subtitle": "Портативное подключение к ATEN CN8000A",
+
+  "field.host": "Адрес KVM",
+  "field.user": "Пользователь",
+  "field.password": "Пароль",
+
+  "button.connect": "Подключиться",
+
+  "status.ready": "Готово к подключению",
+  "status.connecting": "Подключение к KVM…",
+  "status.launched": "Вьюер запущен",
+  "status.error": "Ошибка подключения",
+
+  "footer.line1": "Используется оригинальный Java-вьюер ATEN (JNLP) со встроенным Java 8.",
+  "footer.line2": "Устаревшие TLS и шифрование включены только для связи с KVM.",
+  "footer.line3": "В полях ввода: ПКМ или Ctrl+C / Ctrl+V для копирования и вставки.",
+
+  "menu.cut": "Вырезать",
+  "menu.copy": "Копировать",
+  "menu.paste": "Вставить",
+  "menu.select_all": "Выделить всё",
+
+  "error.fill_fields": "Заполните адрес KVM, имя пользователя и пароль.",
+  "error.javaws_missing": "Не найден javaws во встроенном runtime. Пересоберите портативный пакет.",
+
+  "error.network": "Сетевая ошибка при обращении к {url}: {reason}",
+  "error.login.no_session": "Не удалось войти: KVM не вернул идентификатор сессии. Проверьте адрес, логин и пароль.",
+  "error.login.no_target": "Не удалось войти: на странице устройства не найден идентификатор KVM.",
+  "error.login.no_cookie": "Не удалось войти: KVM не выдал cookie сессии.",
+  "error.jnlp.invalid": "Полученный файл не похож на JNLP-документ вьюера ATEN."
+}

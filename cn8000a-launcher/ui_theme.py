@@ -7,13 +7,14 @@ import tkinter.font as tkfont
 from tkinter import ttk
 
 
+# Шрифты с нормальной поддержкой кириллицы — важен порядок.
 FONT_CANDIDATES = (
-    "Segoe UI",
-    "Ubuntu",
-    "Cantarell",
     "Noto Sans",
     "DejaVu Sans",
+    "Ubuntu",
+    "Cantarell",
     "Liberation Sans",
+    "Segoe UI",
     "Arial",
     "Helvetica",
     "Sans",
@@ -36,6 +37,7 @@ def apply_theme(root: tk.Tk) -> dict[str, tuple[str, int, str] | tuple[str, int]
         "title": (family, 15, "bold"),
         "subtitle": (family, 10),
         "status": (family, 9),
+        "note": (family, 9),
         "button": (family, 10, "bold"),
         "entry": (family, 11),
     }
@@ -54,13 +56,9 @@ def apply_theme(root: tk.Tk) -> dict[str, tuple[str, int, str] | tuple[str, int]
     style.configure("Subtitle.TLabel", font=fonts["subtitle"], foreground="#627d98")
     style.configure("Status.TLabel", font=fonts["status"], foreground="#2f6f3e")
     style.configure("StatusError.TLabel", font=fonts["status"], foreground="#b42318")
-    style.configure("Field.TLabel", font=fonts["base"], foreground="#334e68", width=16, anchor="e")
+    style.configure("Note.TLabel", font=fonts["note"], foreground="#627d98")
+    # Без width= — иначе кириллица разъезжается по буквам в ttk.
+    style.configure("Field.TLabel", font=fonts["base"], foreground="#334e68", anchor="e")
     style.configure("TEntry", font=fonts["entry"], padding=4)
-    style.configure("Accent.TButton", font=fonts["button"], padding=(16, 8))
-    style.map(
-        "Accent.TButton",
-        background=[("active", "#1d6fb8"), ("!disabled", "#1e5f9a")],
-        foreground=[("!disabled", "white")],
-    )
 
     return fonts
