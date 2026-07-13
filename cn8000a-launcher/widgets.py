@@ -28,33 +28,44 @@ def _copy(widget: tk.Widget) -> None:
 
 
 def _paste(widget: tk.Widget) -> None:
+    """Вставка напрямую из буфера — без event_generate, чтобы не дублировать текст."""
     try:
-        widget.event_generate("<<Paste>>")
+        text = widget.winfo_toplevel().clipboard_get()
     except tk.TclError:
-        try:
-            text = widget.winfo_toplevel().clipboard_get()
-            if text:
-                try:
-                    widget.delete("sel.first", "sel.last")  # type: ignore[attr-defined]
-                except tk.TclError:
-                    pass
-                widget.insert(tk.INSERT, text)  # type: ignore[attr-defined]
-        except tk.TclError:
-            pass
+        return
+    if not text:
+        return
+    try:
+        widget.delete("sel.first", "sel.last")  # type: ignore[attr-defined]
+    except tk.TclError:
+        pass
+    widget.insert(tk.INSERT, text)  # type: ignore[attr-defined]
+
+
+def _bind_shortcut(widget: tk.Widget, sequence: str, action) -> None:
+    def handler(_event: tk.Event) -> str:
+        action()
+        return "break"
+
+    widget.bind(sequence, handler)
 
 
 def _bind_clipboard_shortcuts(widget: tk.Widget) -> None:
-    widget.bind("<Control-a>", lambda e: (_select_all(widget), "break"))
-    widget.bind("<Control-A>", lambda e: (_select_all(widget), "break"))
-    widget.bind("<Control-c>", lambda e: (_copy(widget), "break"))
-    widget.bind("<Control-C>", lambda e: (_copy(widget), "break"))
-    widget.bind("<Control-v>", lambda e: (_paste(widget), "break"))
-    widget.bind("<Control-V>", lambda e: (_paste(widget), "break"))
-    widget.bind("<Control-x>", lambda e: (_cut(widget), "break"))
-    widget.bind("<Control-X>", lambda e: (_cut(widget), "break"))
-    widget.bind("<Shift-Insert>", lambda e: (_paste(widget), "break"))
-    widget.bind("<Control-Insert>", lambda e: (_copy(widget), "break"))
-    widget.bind("<Shift-Delete>", lambda e: (_cut(widget), "break"))
+    shortcuts = {
+        "<Control-a>": lambda: _select_all(widget),
+        "<Control-A>": lambda: _select_all(widget),
+        "<Control-c>": lambda: _copy(widget),
+        "<Control-C>": lambda: _copy(widget),
+        "<Control-v>": lambda: _paste(widget),
+        "<Control-V>": lambda: _paste(widget),
+        "<Control-x>": lambda: _cut(widget),
+        "<Control-X>": lambda: _cut(widget),
+        "<Shift-Insert>": lambda: _paste(widget),
+        "<Control-Insert>": lambda: _copy(widget),
+        "<Shift-Delete>": lambda: _cut(widget),
+    }
+    for sequence, action in shortcuts.items():
+        _bind_shortcut(widget, sequence, action)
 
 
 def add_text_context_menu(widget: tk.Widget, i18n: I18n) -> tk.Menu:
