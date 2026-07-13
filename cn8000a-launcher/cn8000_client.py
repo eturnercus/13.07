@@ -1,7 +1,7 @@
-"""ATEN CN8000 / CN8000A KVM login and JNLP download.
+"""Клиент ATEN CN8000 / CN8000A: логин и скачивание JNLP.
 
-Adapted from https://github.com/sagb/cn8000-cli (MIT-style community script).
-Supports legacy CN8000 web interfaces that require TLS 1.0 and weak ciphers.
+Адаптировано из https://github.com/sagb/cn8000-cli
+Поддерживает старые веб-интерфейсы CN8000 с TLS 1.0 и устаревшими шифрами.
 """
 
 from __future__ import annotations
@@ -28,23 +28,21 @@ class SessionInfo:
 
 
 class Cn8000Error(Exception):
-    """Base error for CN8000 client operations."""
+    """Базовая ошибка клиента CN8000."""
 
 
 class LoginError(Cn8000Error):
-    """Authentication or session creation failed."""
+    """Ошибка авторизации или создания сессии."""
 
 
 class JnlpError(Cn8000Error):
-    """JNLP file could not be retrieved."""
+    """Не удалось получить JNLP-файл."""
 
 
 def _legacy_ssl_context() -> ssl.SSLContext:
-    """Build an SSL context that can talk to old ATEN firmware."""
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
-    # OpenSSL 3+ may need explicit legacy re-enablement; ignore if unsupported.
     try:
         ctx.set_ciphers("DEFAULT:@SECLEVEL=0")
     except ssl.SSLError:
@@ -64,7 +62,7 @@ def _request(
     timeout: float = 30.0,
 ) -> tuple[bytes, dict[str, str]]:
     hdrs = {
-        "User-Agent": "CN8000A-Portable-Launcher/1.0",
+        "User-Agent": "CN8000A-Portable-Launcher/1.2",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     }
     if headers:
@@ -83,7 +81,7 @@ def _request(
         response_headers = {k.lower(): v for k, v in exc.headers.items()}
         return body, response_headers
     except urllib.error.URLError as exc:
-        raise Cn8000Error(f"Network error while contacting {url}: {exc}") from exc
+        raise Cn8000Error(f"Сетевая ошибка при обращении к {url}: {exc.reason}") from exc
 
 
 def _site(host: str, *, https: bool = True) -> str:
@@ -122,7 +120,10 @@ def _login_old(site: str, username: str, password: str) -> str:
     text = body.decode("utf-8", errors="replace")
     match = re.search(r"global_sessionpid='(\w+?)'", text)
     if not match:
-        raise LoginError("Login failed: session id not returned by CN8000 (check host/credentials).")
+        raise LoginError(
+            "Не удалось войти: KVM не вернул идентификатор сессии. "
+            "Проверьте адрес, логин и пароль."
+        )
     return match.group(1)
 
 
@@ -131,7 +132,7 @@ def _login_new(site: str, str_url: str, username: str, password: str, host: str)
     page = page_body.decode("utf-8", errors="replace")
     tid_match = re.search(r'name="KVMIP_TARGETID" value="(\w+?)"', page)
     if not tid_match:
-        raise LoginError("Login failed: KVM target id not found on device page.")
+        raise LoginError("Не удалось войти: на странице устройства не найден идентификатор KVM.")
     target_id = tid_match.group(1)
 
     login_value = f"{username}+{password}+{host}+{target_id}"
@@ -153,7 +154,7 @@ def _login_new(site: str, str_url: str, username: str, password: str, host: str)
     set_cookie = headers.get("set-cookie", "")
     sid_match = re.search(r"sid=(\S+)", set_cookie)
     if not sid_match:
-        raise LoginError("Login failed: session cookie not returned by CN8000.")
+        raise LoginError("Не удалось войти: KVM не выдал cookie сессии.")
     sid = sid_match.group(1).rstrip(";")
 
     xid = f"0.{int(time.time() * 1_000_000) % 10**17:017d}"
@@ -165,22 +166,19 @@ def _login_new(site: str, str_url: str, username: str, password: str, host: str)
             "SID": sid,
         }
     ).encode("ascii")
-    inquery_body, _ = _request(
+    _request(
         f"{site}/Inquery",
         data=inquery_form,
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         cookie=f"sid={sid}",
         method="POST",
     )
-    if inquery_body.decode("utf-8", errors="replace").strip() != "u":
-        # Device sometimes still works; keep going like the reference script.
-        pass
 
     return sid, f"{site}/Inquery.jnlp"
 
 
 def fetch_jnlp(host: str, username: str, password: str) -> tuple[bytes, SessionInfo]:
-    """Authenticate against CN8000(A) and download the Java viewer JNLP."""
+    """Авторизация на CN8000(A) и скачивание JNLP вьюера."""
     site = _site(host)
     kvm_type, str_url = detect_kvm_type(site)
 
@@ -206,4 +204,4 @@ def fetch_jnlp(host: str, username: str, password: str) -> tuple[bytes, SessionI
 def validate_jnlp(content: bytes) -> None:
     text = content.decode("utf-8", errors="replace")
     if "<jnlp" not in text.lower():
-        raise JnlpError("Downloaded file does not look like a JNLP document.")
+        raise JnlpError("Полученный файл не похож на JNLP-документ вьюера ATEN.")

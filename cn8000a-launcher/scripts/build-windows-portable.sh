@@ -52,7 +52,7 @@ set "PATH=%ROOT%\bin;%PATH%"
 "%ROOT%\icedtea-web\bin\javaws.exe" %*
 EOF
 
-cp "${ROOT_DIR}/launcher.py" "${ROOT_DIR}/cn8000_client.py" "${DIST_DIR}/app/"
+cp "${ROOT_DIR}/launcher.py" "${ROOT_DIR}/cn8000_client.py" "${ROOT_DIR}/widgets.py" "${DIST_DIR}/app/"
 cp -a "${ROOT_DIR}/resources" "${DIST_DIR}/app/"
 cp -a "${RUNTIME_DIR}" "${DIST_DIR}/app/runtime"
 cp -a "${ROOT_DIR}/python-win" "${DIST_DIR}/app/python"

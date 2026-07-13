@@ -22,6 +22,7 @@ mkdir "%DIST%\app"
 
 copy /Y "%ROOT%launcher.py" "%DIST%\app\" >nul
 copy /Y "%ROOT%cn8000_client.py" "%DIST%\app\" >nul
+copy /Y "%ROOT%widgets.py" "%DIST%\app\" >nul
 xcopy /E /I /Y "%ROOT%resources" "%DIST%\app\resources" >nul
 xcopy /E /I /Y "%ROOT%runtime" "%DIST%\app\runtime" >nul
 xcopy /E /I /Y "%ROOT%python-win" "%DIST%\app\python" >nul

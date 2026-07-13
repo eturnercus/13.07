@@ -1,89 +1,44 @@
-# CN8000A KVM Launcher
+# CN8000A KVM Launcher — исходники
 
-Портативный лаунчер для **ATEN CN8000A** (и совместимых CN8000), который позволяет подключаться к KVM с современных Linux и Windows **без установки Java в систему**.
+Портативный лаунчер для **ATEN CN8000A** с русским интерфейсом, встроенным Python/Java и иконкой приложения.
 
-## Суть проблемы
+## Возможности
 
-CN8000A отдаёт Java-вьюер через **JNLP** (Java Web Start). На современных ОС это ломается из‑за:
-
-- удаления `javaws` из Java 11+;
-- отключения **TLS 1.0 / 1.1** в новых JRE;
-- блокировки **MD5**, **SHA1** и коротких RSA-ключей в `java.security`;
-- устаревшего HTTPS на самом KVM.
-
-Полностью «нативный» клиент без Java **не существует** — видеопоток и управление реализованы в проприетарном `javaclient.jar` ATEN. Реалистичный путь: **встроенный Java 8 + IcedTea-Web + ослабленный `java.security` только внутри портативного пакета**.
-
-## Что делает это приложение
-
-1. Показывает простое окно: **хост, логин, пароль**.
-2. Логинится на веб-интерфейс CN8000 (поддерживаются старый и новый тип прошивки).
-3. Скачивает `JavaClient.jnlp` / `Inquery.jnlp`.
-4. Запускает **bundled** `javaws` с `resources/java.security.legacy`.
-
-Ничего в систему не ставится — только распаковка AppImage / ZIP.
+1. Окно на русском: **адрес KVM, логин, пароль**.
+2. Контекстное меню (ПКМ) и горячие клавиши **Ctrl+C / Ctrl+V / Ctrl+X** в полях ввода.
+3. Автоматический логин на CN8000 и скачивание JNLP.
+4. Запуск встроенного `javaws` с русской локалью Java.
 
 ## Сборка
-
-### Linux → AppImage
 
 ```bash
 cd cn8000a-launcher
 chmod +x scripts/*.sh
+pip install pillow   # генерация icon.ico при сборке
 ./scripts/build-appimage.sh
-# Результат: dist/CN8000A-KVM-x86_64.AppImage
-chmod +x dist/CN8000A-KVM-x86_64.AppImage
-./dist/CN8000A-KVM-x86_64.AppImage
+./scripts/build-windows-portable.sh
 ```
 
-Требования для сборки: `curl`, `python3`, `python3-tk`, `unzip`, `fuse` (для AppImage).
+Результаты: `dist/CN8000A-KVM-x86_64.AppImage` и `dist/CN8000A-KVM-Portable-Win64.zip`.
 
-### Windows → portable ZIP
+## Файлы
 
-На Windows (или cross-build):
-
-```bat
-cd cn8000a-launcher
-scripts\build-windows.bat
-REM Результат: dist\CN8000A-KVM-Portable-Win64\
-REM Запуск: dist\CN8000A-KVM-Portable-Win64\CN8000A-KVM.bat
-```
-
-Для GUI нужен Python 3 с **tkinter** (в комплекте с официальным Python для Windows). При желании можно дополнительно упаковать через PyInstaller в один `.exe`.
-
-### Только скачать runtime (для разработки)
-
-```bash
-./scripts/download-runtime.sh
-python3 launcher.py
-```
+| Файл | Назначение |
+|------|------------|
+| `launcher.py` | GUI лаунчер |
+| `widgets.py` | Поля ввода с ПКМ-меню |
+| `cn8000_client.py` | Логин и JNLP |
+| `resources/icon.png` | Иконка приложения |
+| `resources/java.security.legacy` | Ослабленные TLS/шифры для JRE 8 |
 
 ## Ограничения
 
 | Тема | Статус |
 |------|--------|
-| Работа без Python/Java в системе | Да — Python 3.12 и JRE 8 внутри пакета |
-| Linux Wayland | Нужен **XWayland** / X11 (Java Swing) |
-| Размер пакета | ~80–120 МБ (JRE 8 + IcedTea-Web) |
-| Безопасность | TLS 1.0/слабые алгоритмы **только** для связи с KVM |
-| Полная замена Java-клиента | Нет — нужен оригинальный JAR с устройства |
-
-## Архитектура
-
-```mermaid
-flowchart LR
-  GUI[launcher.py GUI] --> API[cn8000_client.py]
-  API -->|HTTPS TLS1.0| KVM[CN8000A Web]
-  API --> JNLP[jnlp file]
-  JNLP --> JWS[bundled javaws]
-  JWS --> Viewer[ATEN Java KVM Viewer]
-```
-
-## Полезные ссылки
-
-- [sagb/cn8000-cli](https://github.com/sagb/cn8000-cli) — логин и скачивание JNLP из CLI
-- [egorsmkv/kvm-over-ip-cn8000a-jnlp-client](https://github.com/egorsmkv/kvm-over-ip-cn8000a-jnlp-client) — Docker + Java 7
-- [ATEN FAQ: SHA1 / Unable to launch](https://eservice.aten.com/eServiceCx/Common/FAQ/view.do?id=19062)
+| Python/Java в системе | Не нужны — всё внутри пакета |
+| Буфер обмена в Java-вьюере ATEN | Зависит от оригинального клиента ATEN |
+| Linux Wayland | Нужен XWayland / X11 |
 
 ## Лицензия
 
-MIT — код лаунчера. JRE/IcedTea-Web и `javaclient.jar` с устройства — лицензии соответствующих правообладателей.
+MIT — код лаунчера.

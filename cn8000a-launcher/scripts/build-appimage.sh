@@ -18,7 +18,7 @@ fi
 rm -rf "${APPDIR}"
 mkdir -p "${APPDIR}/usr/bin" "${APP_PAYLOAD}"
 
-cp -a "${ROOT_DIR}/launcher.py" "${ROOT_DIR}/cn8000_client.py" "${APP_PAYLOAD}/"
+cp -a "${ROOT_DIR}/launcher.py" "${ROOT_DIR}/cn8000_client.py" "${ROOT_DIR}/widgets.py" "${APP_PAYLOAD}/"
 cp -a "${ROOT_DIR}/resources" "${APP_PAYLOAD}/"
 cp -a "${ROOT_DIR}/runtime" "${APP_PAYLOAD}/runtime"
 cp -a "${ROOT_DIR}/python-linux" "${APP_PAYLOAD}/python"
@@ -51,13 +51,11 @@ Categories=Network;RemoteAccess;
 Terminal=false
 EOF
 
-python3 - <<'PY' "${APPDIR}/cn8000a-kvm.png"
-import base64, pathlib, sys
-png = base64.b64decode(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO2T2WkAAAAASUVORK5CYII="
-)
-pathlib.Path(sys.argv[1]).write_bytes(png)
-PY
+ICON_SRC="${ROOT_DIR}/resources/icon-256.png"
+if [[ ! -f "${ICON_SRC}" ]]; then
+  ICON_SRC="${ROOT_DIR}/resources/icon.png"
+fi
+cp "${ICON_SRC}" "${APPDIR}/cn8000a-kvm.png"
 
 if [[ ! -x "${APPIMAGE_TOOL}" ]]; then
   curl -fL -o "${APPIMAGE_TOOL}" \
@@ -66,5 +64,5 @@ if [[ ! -x "${APPIMAGE_TOOL}" ]]; then
 fi
 
 mkdir -p "${ROOT_DIR}/dist"
-ARCH=x86_64 VERSION=1.1.0 "${APPIMAGE_TOOL}" "${APPDIR}" "${ROOT_DIR}/dist/CN8000A-KVM-x86_64.AppImage"
+ARCH=x86_64 VERSION=1.2.0 "${APPIMAGE_TOOL}" "${APPDIR}" "${ROOT_DIR}/dist/CN8000A-KVM-x86_64.AppImage"
 echo "Built ${ROOT_DIR}/dist/CN8000A-KVM-x86_64.AppImage"

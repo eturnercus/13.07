@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Portable GUI launcher for ATEN CN8000A Java KVM viewer."""
+"""Портативный лаунчер KVM для ATEN CN8000A."""
 
 from __future__ import annotations
 
@@ -14,15 +14,20 @@ from pathlib import Path
 from tkinter import messagebox, ttk
 
 from cn8000_client import Cn8000Error, fetch_jnlp, validate_jnlp
+from widgets import make_labeled_entry
 
-APP_NAME = "CN8000A KVM Launcher"
-APP_VERSION = "1.1.0"
+APP_NAME = "CN8000A KVM"
+APP_VERSION = "1.2.0"
 
 
 def app_root() -> Path:
     if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
     return Path(__file__).resolve().parent
+
+
+def resources_dir() -> Path:
+    return app_root() / "resources"
 
 
 def config_path() -> Path:
@@ -50,7 +55,7 @@ def save_profiles(host: str, user: str) -> None:
     data = load_profiles()
     data["last_host"] = host
     data["last_user"] = user
-    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
 def find_javaws() -> Path | None:
@@ -58,6 +63,7 @@ def find_javaws() -> Path | None:
     candidates = [
         bundled / "bin" / "javaws",
         bundled / "bin" / "javaws.exe",
+        bundled / "bin" / "javaws.cmd",
         bundled / "icedtea-web" / "bin" / "javaws",
         bundled / "icedtea-web" / "bin" / "javaws.exe",
     ]
@@ -71,62 +77,122 @@ def launch_viewer(jnlp_file: Path) -> None:
     javaws = find_javaws()
     if javaws is None:
         raise FileNotFoundError(
-            "Bundled javaws not found. Build the portable package first "
-            "(see README: scripts/download-runtime.sh)."
+            "Не найден javaws во встроенном runtime. Пересоберите портативный пакет."
         )
 
-    security_override = app_root() / "resources" / "java.security.legacy"
+    security_override = resources_dir() / "java.security.legacy"
     env = os.environ.copy()
     java_home = javaws.parent.parent
     env["JAVA_HOME"] = str(java_home)
     env["PATH"] = f"{java_home / 'bin'}{os.pathsep}{env.get('PATH', '')}"
+    env.setdefault("LANG", "ru_RU.UTF-8")
+    env.setdefault("LC_ALL", "ru_RU.UTF-8")
 
-    cmd = [str(javaws), "-verbose"]
+    jvm_opts = [
+        "-J-Duser.language=ru",
+        "-J-Duser.country=RU",
+        "-J-Dfile.encoding=UTF-8",
+        "-J-Dawt.useSystemAAFontSettings=on",
+        "-J-Djava.awt.datatransfer.SystemClipboardCompatible=true",
+    ]
     if security_override.exists():
-        cmd.append(f"-J-Djava.security.properties={security_override}")
-    cmd.append(str(jnlp_file))
+        jvm_opts.append(f"-J-Djava.security.properties={security_override}")
 
+    cmd = [str(javaws), "-verbose", *jvm_opts, str(jnlp_file)]
     subprocess.Popen(cmd, env=env, cwd=str(app_root()))
+
+
+def set_window_icon(window: tk.Tk | tk.Toplevel) -> None:
+    for name in ("icon-256.png", "icon.png"):
+        icon_png = resources_dir() / name
+        if icon_png.exists():
+            break
+    else:
+        return
+    icon_ico = resources_dir() / "icon.ico"
+    try:
+        if icon_ico.exists() and os.name == "nt":
+            window.iconbitmap(default=str(icon_ico))
+        if icon_png.exists():
+            image = tk.PhotoImage(file=str(icon_png))
+            window.iconphoto(True, image)
+            window._icon_image_ref = image  # prevent GC
+    except tk.TclError:
+        pass
 
 
 class LauncherApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
-        self.title(f"{APP_NAME} {APP_VERSION}")
+        self.title(f"{APP_NAME} — v{APP_VERSION}")
         self.resizable(False, False)
+        set_window_icon(self)
 
+        self._setup_style()
         profiles = load_profiles()
 
-        frame = ttk.Frame(self, padding=12)
-        frame.grid(row=0, column=0, sticky="nsew")
+        outer = ttk.Frame(self, padding=16)
+        outer.grid(row=0, column=0, sticky="nsew")
 
-        ttk.Label(frame, text="KVM host / IP:").grid(row=0, column=0, sticky="w", pady=4)
+        header = ttk.Frame(outer)
+        header.grid(row=0, column=0, sticky="ew", pady=(0, 12))
+        ttk.Label(header, text=APP_NAME, style="Title.TLabel").pack(anchor="w")
+        ttk.Label(
+            header,
+            text="Портативное подключение к ATEN CN8000A",
+            style="Subtitle.TLabel",
+        ).pack(anchor="w")
+
+        form = ttk.LabelFrame(outer, text="Параметры подключения", padding=12)
+        form.grid(row=1, column=0, sticky="ew")
+        form.columnconfigure(1, weight=1)
+
         self.host_var = tk.StringVar(value=profiles.get("last_host", ""))
-        ttk.Entry(frame, textvariable=self.host_var, width=42).grid(row=0, column=1, pady=4)
-
-        ttk.Label(frame, text="Username:").grid(row=1, column=0, sticky="w", pady=4)
         self.user_var = tk.StringVar(value=profiles.get("last_user", ""))
-        ttk.Entry(frame, textvariable=self.user_var, width=42).grid(row=1, column=1, pady=4)
-
-        ttk.Label(frame, text="Password:").grid(row=2, column=0, sticky="w", pady=4)
         self.pass_var = tk.StringVar()
-        ttk.Entry(frame, textvariable=self.pass_var, show="*", width=42).grid(row=2, column=1, pady=4)
 
-        self.status_var = tk.StringVar(value="Ready")
-        ttk.Label(frame, textvariable=self.status_var, foreground="#444").grid(
-            row=3, column=0, columnspan=2, sticky="w", pady=(8, 4)
+        make_labeled_entry(form, "Адрес KVM (IP/хост):", row=0, textvariable=self.host_var)
+        make_labeled_entry(form, "Имя пользователя:", row=1, textvariable=self.user_var)
+        make_labeled_entry(
+            form,
+            "Пароль:",
+            row=2,
+            textvariable=self.pass_var,
+            show="•",
         )
 
-        self.connect_btn = ttk.Button(frame, text="Connect", command=self.on_connect)
-        self.connect_btn.grid(row=4, column=0, columnspan=2, pady=(4, 0), sticky="ew")
+        self.status_var = tk.StringVar(value="Готово к подключению")
+        ttk.Label(outer, textvariable=self.status_var, style="Status.TLabel").grid(
+            row=2, column=0, sticky="w", pady=(10, 6)
+        )
+
+        buttons = ttk.Frame(outer)
+        buttons.grid(row=3, column=0, sticky="ew")
+        buttons.columnconfigure(0, weight=1)
+
+        self.connect_btn = ttk.Button(buttons, text="Подключиться", command=self.on_connect)
+        self.connect_btn.grid(row=0, column=0, sticky="ew")
 
         note = (
-            "Uses the original ATEN Java viewer (JNLP) inside a bundled Java 8 runtime.\n"
-            "TLS 1.0 / legacy crypto are enabled only for talking to the KVM device."
+            "Используется оригинальный Java-вьюер ATEN (JNLP) со встроенным Java 8.\n"
+            "Устаревшие TLS/шифрование включены только для связи с KVM.\n"
+            "В полях ввода: ПКМ или Ctrl+C / Ctrl+V для копирования и вставки."
         )
-        ttk.Label(frame, text=note, wraplength=360, justify="left").grid(
-            row=5, column=0, columnspan=2, sticky="w", pady=(12, 0)
+        ttk.Label(outer, text=note, wraplength=380, justify="left", style="Note.TLabel").grid(
+            row=4, column=0, sticky="w", pady=(12, 0)
         )
+
+        self.bind("<Return>", lambda _e: self.on_connect())
+        self.bind("<Escape>", lambda _e: self.destroy())
+
+    def _setup_style(self) -> None:
+        style = ttk.Style(self)
+        if "clam" in style.theme_names():
+            style.theme_use("clam")
+        style.configure("Title.TLabel", font=("Segoe UI", 14, "bold"))
+        style.configure("Subtitle.TLabel", font=("Segoe UI", 10), foreground="#555")
+        style.configure("Status.TLabel", font=("Segoe UI", 10), foreground="#2f6f3e")
+        style.configure("Note.TLabel", font=("Segoe UI", 9), foreground="#666")
 
     def set_busy(self, busy: bool, message: str) -> None:
         self.status_var.set(message)
@@ -138,10 +204,10 @@ class LauncherApp(tk.Tk):
         password = self.pass_var.get()
 
         if not host or not user or not password:
-            messagebox.showerror(APP_NAME, "Please fill in host, username, and password.")
+            messagebox.showerror(APP_NAME, "Заполните адрес KVM, имя пользователя и пароль.")
             return
 
-        self.set_busy(True, "Connecting to KVM...")
+        self.set_busy(True, "Подключение к KVM…")
         threading.Thread(
             target=self._connect_worker,
             args=(host, user, password),
@@ -158,12 +224,12 @@ class LauncherApp(tk.Tk):
 
             save_profiles(host, user)
             launch_viewer(tmp)
-            self.after(0, lambda: self.set_busy(False, f"Viewer launched ({tmp.name})"))
+            self.after(0, lambda: self.set_busy(False, "Вьюер запущен. Можно управлять KVM."))
         except (Cn8000Error, OSError, subprocess.SubprocessError) as exc:
             self.after(
                 0,
                 lambda: (
-                    self.set_busy(False, "Connection failed"),
+                    self.set_busy(False, "Ошибка подключения"),
                     messagebox.showerror(APP_NAME, str(exc)),
                 ),
             )
