@@ -4,18 +4,18 @@
 
 ## Скачать
 
-**Релиз:** [v0.2](https://github.com/eturnercus/13.07/releases/tag/v0.2)
+**Релиз:** [v0.2](https://github.com/eturnercus/KVM-Launcher/releases/tag/v0.2)
 
 | Платформа | Файл | Как запустить |
 |-----------|------|---------------|
-| **Linux x86_64** | [CN8000A-KVM-x86_64.AppImage](https://github.com/eturnercus/13.07/releases/download/v0.2/CN8000A-KVM-x86_64.AppImage) | `chmod +x CN8000A-KVM-x86_64.AppImage && ./CN8000A-KVM-x86_64.AppImage` |
-| **Windows x64** | [CN8000A-KVM-Portable-Win64.zip](https://github.com/eturnercus/13.07/releases/download/v0.2/CN8000A-KVM-Portable-Win64.zip) | Распаковать → запустить `CN8000A-KVM.exe` |
+| **Linux x86_64** | [CN8000A-KVM-x86_64.AppImage](https://github.com/eturnercus/KVM-Launcher/releases/download/v0.2/CN8000A-KVM-x86_64.AppImage) | `chmod +x CN8000A-KVM-x86_64.AppImage && ./CN8000A-KVM-x86_64.AppImage` |
+| **Windows x64** | [CN8000A-KVM-Portable-Win64.zip](https://github.com/eturnercus/KVM-Launcher/releases/download/v0.2/CN8000A-KVM-Portable-Win64.zip) | Распаковать → запустить `CN8000A-KVM.exe` |
 
 > **Полностью портативно** — Python, Java 8 и IcedTea-Web уже внутри. Ничего ставить не нужно.
 
 ## Быстрый старт
 
-1. Скачайте сборку для своей ОС из [релизов](https://github.com/eturnercus/13.07/releases/latest).
+1. Скачайте сборку для своей ОС из [релизов](https://github.com/eturnercus/KVM-Launcher/releases/latest).
 2. Запустите приложение.
 3. Введите **IP/хост**, **логин** и **пароль** от KVM.
 4. Нажмите **Подключиться** — откроется оригинальный Java-вьюер ATEN.
