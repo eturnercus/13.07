@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build Windows portable ZIP from Linux (for CI / release packaging).
+# Build Windows portable ZIP with CN8000A-KVM.exe (PyInstaller) + Java runtime.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -7,13 +7,15 @@ CACHE_DIR="${ROOT_DIR}/.cache"
 RUNTIME_DIR="${ROOT_DIR}/runtime-win"
 DIST_DIR="${ROOT_DIR}/dist/CN8000A-KVM-Portable-Win64"
 ZIP_OUT="${ROOT_DIR}/dist/CN8000A-KVM-Portable-Win64.zip"
+PYI_DIST="${ROOT_DIR}/dist/CN8000A-KVM"
 
 TEMURIN_API="https://api.adoptium.net/v3/binary/latest/8/ga"
 ITW_URL="https://github.com/AdoptOpenJDK/IcedTea-Web/releases/download/icedtea-web-1.8.8/icedtea-web-1.8.8.win.bin.zip"
 
+export WINEDEBUG="${WINEDEBUG:--all}"
+
 mkdir -p "${ROOT_DIR}/dist"
 "${ROOT_DIR}/scripts/ensure-runtime.sh" 2>/dev/null || true
-# Linux build host: ensure Linux runtime; Windows ZIP uses runtime-win below.
 if [[ ! -x "${ROOT_DIR}/runtime/icedtea-web/bin/javaws" && ! -x "${ROOT_DIR}/runtime/bin/javaws" ]]; then
   "${ROOT_DIR}/scripts/download-runtime.sh"
 fi
@@ -31,13 +33,18 @@ if [[ ! -x "${ROOT_DIR}/python-win/python.exe" ]]; then
   "${ROOT_DIR}/scripts/download-python-runtime.sh" windows
 fi
 
+if ! wine "${ROOT_DIR}/python-win/python.exe" -c "import PyInstaller" 2>/dev/null; then
+  echo "Installing PyInstaller into Windows Python (Wine)..."
+  wine "${ROOT_DIR}/python-win/python.exe" -m pip install pyinstaller
+fi
+
 JRE_ZIP="${CACHE_DIR}/temurin8-jre-windows.zip"
 ITW_ZIP="${CACHE_DIR}/icedtea-web-win.zip"
 download "${TEMURIN_API}/windows/x64/jre/hotspot/normal/eclipse?project=jdk" "${JRE_ZIP}"
 download "${ITW_URL}" "${ITW_ZIP}"
 
-rm -rf "${RUNTIME_DIR}" "${DIST_DIR}"
-mkdir -p "${RUNTIME_DIR}" "${DIST_DIR}/app"
+rm -rf "${RUNTIME_DIR}" "${DIST_DIR}" "${PYI_DIST}"
+mkdir -p "${RUNTIME_DIR}"
 
 unzip -oq "${JRE_ZIP}" -d "${CACHE_DIR}/temurin-win"
 JRE_SRC="$(find "${CACHE_DIR}/temurin-win" -maxdepth 2 -type d -name 'jdk8u*-jre' | head -n1)"
@@ -57,21 +64,16 @@ set "PATH=%ROOT%\bin;%PATH%"
 "%ROOT%\icedtea-web\bin\javaws.exe" %*
 EOF
 
-cp "${ROOT_DIR}/launcher.py" "${ROOT_DIR}/cn8000_client.py" "${ROOT_DIR}/widgets.py" "${ROOT_DIR}/ui_theme.py" "${ROOT_DIR}/kvm_transport.py" "${DIST_DIR}/app/"
-cp -a "${ROOT_DIR}/i18n" "${DIST_DIR}/app/"
-cp -a "${ROOT_DIR}/resources" "${DIST_DIR}/app/"
-cp -a "${RUNTIME_DIR}" "${DIST_DIR}/app/runtime"
-cp -a "${ROOT_DIR}/python-win" "${DIST_DIR}/app/python"
+echo "Building CN8000A-KVM.exe with PyInstaller..."
+(
+  cd "${ROOT_DIR}"
+  wine python-win/python.exe -m PyInstaller --noconfirm --clean cn8000a.spec
+)
 
-cat > "${DIST_DIR}/CN8000A-KVM.bat" <<'EOF'
-@echo off
-setlocal
-set "APP_DIR=%~dp0app"
-set "PYTHONPATH=%APP_DIR%"
-cd /d "%APP_DIR%"
-start "" "%APP_DIR%\python\pythonw.exe" "%APP_DIR%\launcher.py"
-EOF
+mkdir -p "${DIST_DIR}"
+cp -a "${PYI_DIST}/." "${DIST_DIR}/"
+cp -a "${RUNTIME_DIR}" "${DIST_DIR}/runtime"
 
 rm -f "${ZIP_OUT}"
 (cd "${ROOT_DIR}/dist" && zip -qr "$(basename "${ZIP_OUT}")" "$(basename "${DIST_DIR}")")
-echo "Built ${ZIP_OUT}"
+echo "Built ${ZIP_OUT} (contains CN8000A-KVM.exe)"

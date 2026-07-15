@@ -34,6 +34,9 @@ if [[ -f "${APPIMAGE}" ]]; then
     [[ -f "${SQUASH}/usr/lib/cn8000a/kvm_transport.py" ]] \
       && echo "OK AppImage: kvm_transport.py" \
       || { echo "FAIL AppImage: kvm_transport.py missing" >&2; FAIL=1; }
+    [[ -f "${SQUASH}/usr/lib/cn8000a/resources/fonts/DejaVuSans.ttf" ]] \
+      && echo "OK AppImage: bundled fonts" \
+      || { echo "FAIL AppImage: bundled fonts missing" >&2; FAIL=1; }
     rm -rf "${SQUASH}"
   else
     echo "FAIL AppImage: could not extract payload" >&2
@@ -41,12 +44,12 @@ if [[ -f "${APPIMAGE}" ]]; then
   fi
 fi
 
-WIN_APP="${ROOT_DIR}/dist/CN8000A-KVM-Portable-Win64/app"
-if [[ -d "${WIN_APP}/runtime" ]]; then
-  check_javaws_in_dir "${WIN_APP}/runtime" "Windows ZIP runtime"
-  [[ -f "${WIN_APP}/kvm_transport.py" ]] \
-    && echo "OK Windows: kvm_transport.py" \
-    || { echo "FAIL Windows: kvm_transport.py missing" >&2; FAIL=1; }
+WIN_DIR="${ROOT_DIR}/dist/CN8000A-KVM-Portable-Win64"
+if [[ -d "${WIN_DIR}/runtime" ]]; then
+  check_javaws_in_dir "${WIN_DIR}/runtime" "Windows ZIP runtime"
+  [[ -f "${WIN_DIR}/CN8000A-KVM.exe" ]] \
+    && echo "OK Windows: CN8000A-KVM.exe" \
+    || { echo "FAIL Windows: CN8000A-KVM.exe missing" >&2; FAIL=1; }
 fi
 
 if [[ "${FAIL}" -ne 0 ]]; then

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import gzip
 import http.client
 import re
@@ -9,11 +10,17 @@ import socket
 import ssl
 from urllib.parse import urlparse
 
+DEFAULT_TIMEOUT = 15.0
+DNS_TIMEOUT = 10.0
+
 
 class KvmHttpError(Exception):
-    def __init__(self, message: str, *, status: int | None = None) -> None:
-        self.status = status
-        super().__init__(message)
+    """Ошибка транспорта с машинным кодом для i18n."""
+
+    def __init__(self, code: str, **params: str) -> None:
+        self.code = code
+        self.params = params
+        super().__init__(code)
 
 
 def _legacy_ssl_context() -> ssl.SSLContext:
@@ -44,20 +51,24 @@ def parse_host(host: str) -> tuple[str, str]:
     return host, f"https://{host}"
 
 
-def _resolve_ipv4(hostname: str) -> str:
-    try:
-        return socket.gethostbyname(hostname)
-    except socket.gaierror as exc:
-        raise KvmHttpError(f"Не удалось разрешить адрес {hostname}: {exc}") from exc
+def _resolve_ipv4(hostname: str, *, timeout: float = DNS_TIMEOUT) -> str:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(socket.gethostbyname, hostname)
+        try:
+            return future.result(timeout=timeout)
+        except concurrent.futures.TimeoutError as exc:
+            raise KvmHttpError("dns_timeout", host=hostname) from exc
+        except socket.gaierror as exc:
+            raise KvmHttpError("dns_failed", host=hostname, detail=str(exc)) from exc
 
 
 class KvmHttpClient:
     """Минимальный клиент: TLS 1.0 + HTTP/1.0 + IPv4 + gzip."""
 
-    def __init__(self, hostname: str, *, timeout: float = 25.0) -> None:
+    def __init__(self, hostname: str, *, timeout: float = DEFAULT_TIMEOUT) -> None:
         self.hostname = hostname
         self.timeout = timeout
-        self._ip = _resolve_ipv4(hostname)
+        self._ip = _resolve_ipv4(hostname, timeout=min(timeout, DNS_TIMEOUT))
         self._ssl = _legacy_ssl_context()
 
     def request(
@@ -78,7 +89,7 @@ class KvmHttpClient:
 
         headers = {
             "Host": self.hostname,
-            "User-Agent": "CN8000A-Portable-Launcher/0.1",
+            "User-Agent": "CN8000A-Portable-Launcher/0.2",
             "Connection": "close",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
@@ -94,9 +105,15 @@ class KvmHttpClient:
             data = resp.read()
             hdrs = {k.lower(): v for k, v in resp.getheaders()}
             if resp.status >= 400:
-                raise KvmHttpError(f"HTTP {resp.status} для {path}", status=resp.status)
+                raise KvmHttpError("http_status", status=str(resp.status), path=path)
+        except TimeoutError as exc:
+            raise KvmHttpError("timeout", seconds=str(int(self.timeout))) from exc
+        except OSError as exc:
+            if "timed out" in str(exc).lower():
+                raise KvmHttpError("timeout", seconds=str(int(self.timeout))) from exc
+            raise KvmHttpError("connection_failed", path=path, detail=str(exc)) from exc
         except http.client.HTTPException as exc:
-            raise KvmHttpError(f"Соединение с KVM прервано ({path}): {exc}") from exc
+            raise KvmHttpError("connection_failed", path=path, detail=str(exc)) from exc
         finally:
             conn.close()
 

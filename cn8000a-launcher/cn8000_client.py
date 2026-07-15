@@ -8,7 +8,7 @@ import urllib.parse
 from dataclasses import dataclass
 from typing import Literal
 
-from kvm_transport import KvmHttpClient, KvmHttpError, parse_host
+from kvm_transport import DEFAULT_TIMEOUT, KvmHttpClient, KvmHttpError, parse_host
 
 
 KvmType = Literal["old", "new"]
@@ -39,6 +39,22 @@ class JnlpError(Cn8000Error):
     """Не удалось получить JNLP-файл."""
 
 
+def _map_transport_error(client: KvmHttpClient, exc: KvmHttpError) -> Cn8000Error:
+    code = exc.code
+    params = exc.params
+    url = f"https://{client.hostname}{params.get('path', '')}"
+
+    if code == "timeout":
+        return Cn8000Error("error.timeout", seconds=params.get("seconds", str(int(client.timeout))))
+    if code == "dns_timeout":
+        return Cn8000Error("error.dns_timeout", host=params.get("host", client.hostname))
+    if code == "dns_failed":
+        return Cn8000Error("error.dns_failed", host=params.get("host", client.hostname))
+    if code == "http_status":
+        return Cn8000Error("error.http_status", url=url, status=params.get("status", "?"))
+    return Cn8000Error("error.network", url=url, detail=params.get("detail", code))
+
+
 def _request(
     client: KvmHttpClient,
     path: str,
@@ -50,7 +66,7 @@ def _request(
     try:
         return client.request(method, path, body=data, cookie=cookie)
     except KvmHttpError as exc:
-        raise Cn8000Error("error.network", url=f"https://{client.hostname}{path}", reason=str(exc)) from exc
+        raise _map_transport_error(client, exc) from exc
 
 
 def detect_kvm_type(client: KvmHttpClient) -> tuple[KvmType, str | None]:
@@ -76,7 +92,7 @@ def _login_old(client: KvmHttpClient, username: str, password: str) -> str:
     text = body.decode("utf-8", errors="replace")
     match = re.search(r"global_sessionpid='(\w+?)'", text)
     if not match:
-        raise LoginError("error.login.no_session")
+        raise LoginError("error.login.failed")
     return match.group(1)
 
 
@@ -105,7 +121,7 @@ def _login_new(
     _, headers = _request(client, f"/{str_url}", data=form, method="POST")
     sid = KvmHttpClient.extract_sid(headers)
     if not sid:
-        raise LoginError("error.login.no_cookie")
+        raise LoginError("error.login.failed")
 
     xid = f"0.{int(time.time() * 1_000_000) % 10**17:017d}"
     inquery_body = urllib.parse.urlencode(
@@ -120,9 +136,15 @@ def _login_new(
     return sid
 
 
-def fetch_jnlp(host: str, username: str, password: str) -> tuple[bytes, SessionInfo]:
+def fetch_jnlp(
+    host: str,
+    username: str,
+    password: str,
+    *,
+    timeout: float = DEFAULT_TIMEOUT,
+) -> tuple[bytes, SessionInfo]:
     login_host, _base = parse_host(host)
-    client = KvmHttpClient(login_host)
+    client = KvmHttpClient(login_host, timeout=timeout)
     kvm_type, str_url = detect_kvm_type(client)
 
     if kvm_type == "old":

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import subprocess
 import sys
 import tempfile
@@ -19,8 +20,14 @@ from i18n import I18n
 from ui_theme import apply_theme
 from widgets import add_text_context_menu
 
-APP_VERSION = "0.1"
+APP_VERSION = "0.2"
 LABEL_COLUMN_MINSIZE = 132
+
+
+def _bundle_dir() -> Path:
+    if getattr(sys, "frozen", False) and getattr(sys, "_MEIPASS", None):
+        return Path(sys._MEIPASS)
+    return Path(__file__).resolve().parent
 
 
 def app_root() -> Path:
@@ -30,11 +37,11 @@ def app_root() -> Path:
 
 
 def resources_dir() -> Path:
-    return app_root() / "resources"
+    return _bundle_dir() / "resources"
 
 
 def i18n_dir() -> Path:
-    return app_root() / "i18n" / "languages"
+    return _bundle_dir() / "i18n" / "languages"
 
 
 def config_path() -> Path:
@@ -84,7 +91,12 @@ def find_javaws() -> Path | None:
 def format_error(i18n: I18n, exc: BaseException) -> str:
     if isinstance(exc, Cn8000Error):
         return i18n.t(exc.code, **exc.params)
-    return str(exc)
+    if isinstance(exc, (TimeoutError, socket.timeout)):
+        return i18n.t("error.timeout", seconds="15")
+    message = str(exc).lower()
+    if "timed out" in message or "timeout" in message:
+        return i18n.t("error.timeout", seconds="15")
+    return i18n.t("error.unexpected", detail=str(exc))
 
 
 class LauncherApp(tk.Tk):
@@ -161,26 +173,15 @@ class LauncherApp(tk.Tk):
         return entry
 
     def _build_actions(self, parent: ttk.Frame) -> None:
-        actions = tk.Frame(parent, bg="#f4f6f8")
+        actions = ttk.Frame(parent)
         actions.grid(row=2, column=0, sticky="ew", pady=(16, 0))
         actions.columnconfigure(0, weight=1)
 
-        self.connect_btn = tk.Button(
+        self.connect_btn = ttk.Button(
             actions,
             text=self.i18n.t("button.connect"),
             command=self.on_connect,
-            font=self._fonts["button"],
-            bg="#1e5f9a",
-            fg="white",
-            activebackground="#1d6fb8",
-            activeforeground="white",
-            disabledforeground="#d9e2ec",
-            relief=tk.FLAT,
-            cursor="hand2",
-            padx=18,
-            pady=8,
-            borderwidth=0,
-            highlightthickness=0,
+            style="Accent.TButton",
         )
         self.connect_btn.grid(row=0, column=0, sticky="ew")
 
@@ -234,7 +235,7 @@ class LauncherApp(tk.Tk):
             save_profiles(host, user, self.i18n.lang)
             launch_viewer(tmp, self.i18n)
         except Exception as exc:
-            error_msg = format_error(self.i18n, exc) if isinstance(exc, Cn8000Error) else str(exc)
+            error_msg = format_error(self.i18n, exc)
         finally:
             if error_msg:
                 self.after(

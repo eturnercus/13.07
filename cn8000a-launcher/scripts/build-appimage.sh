@@ -12,6 +12,7 @@ if [[ ! -x "${ROOT_DIR}/python-linux/bin/python3" ]]; then
   "${ROOT_DIR}/scripts/download-python-runtime.sh" linux
 fi
 "${ROOT_DIR}/scripts/ensure-runtime.sh"
+"${ROOT_DIR}/scripts/download-fonts.sh"
 
 rm -rf "${APPDIR}"
 mkdir -p "${APPDIR}/usr/bin" "${APP_PAYLOAD}"
@@ -62,6 +63,14 @@ if [[ ! -x "${APPIMAGE_TOOL}" ]]; then
   chmod +x "${APPIMAGE_TOOL}"
 fi
 
+APPIMAGE_EXTRACTED="${ROOT_DIR}/.cache/appimagetool-squashfs-root/AppRun"
+if [[ ! -x "${APPIMAGE_EXTRACTED}" ]]; then
+  rm -rf "${ROOT_DIR}/.cache/appimagetool-squashfs-root"
+  (cd "${ROOT_DIR}/.cache" && ./appimagetool-x86_64.AppImage --appimage-extract)
+  mv "${ROOT_DIR}/.cache/squashfs-root" "${ROOT_DIR}/.cache/appimagetool-squashfs-root"
+fi
+APPIMAGE_TOOL="${APPIMAGE_EXTRACTED}"
+
 mkdir -p "${ROOT_DIR}/dist"
-ARCH=x86_64 VERSION=0.1 "${APPIMAGE_TOOL}" "${APPDIR}" "${ROOT_DIR}/dist/CN8000A-KVM-x86_64.AppImage"
+ARCH=x86_64 VERSION=0.2 "${APPIMAGE_TOOL}" "${APPDIR}" "${ROOT_DIR}/dist/CN8000A-KVM-x86_64.AppImage"
 echo "Built ${ROOT_DIR}/dist/CN8000A-KVM-x86_64.AppImage"

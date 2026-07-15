@@ -24,10 +24,17 @@
 
   "error.fill_fields": "Please enter KVM address, username, and password.",
   "error.javaws_missing": "Bundled javaws not found. Rebuild the portable package.",
+  "error.unexpected": "Unexpected error: {detail}",
 
-  "error.network": "Network error while contacting {url}: {reason}",
+  "error.timeout": "KVM did not respond within {seconds} seconds. Check the address and network.",
+  "error.dns_timeout": "Could not resolve host \"{host}\" — DNS lookup timed out.",
+  "error.dns_failed": "Could not resolve host \"{host}\". Check the hostname.",
+  "error.http_status": "KVM returned HTTP {status} for {url}.",
+  "error.network": "Network error while contacting {url}: {detail}",
+
+  "error.login.failed": "Invalid username or password. Check your credentials and try again.",
   "error.login.no_session": "Login failed: no session id from KVM. Check address, username, and password.",
   "error.login.no_target": "Login failed: KVM target id not found on device page.",
-  "error.login.no_cookie": "Login failed: KVM did not return a session cookie.",
+  "error.login.no_cookie": "Login failed: KVM did not return a session cookie. Check username and password.",
   "error.jnlp.invalid": "Downloaded file does not look like an ATEN viewer JNLP document."
 }

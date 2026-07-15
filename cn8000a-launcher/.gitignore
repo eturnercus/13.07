@@ -7,3 +7,6 @@ build/
 dist/
 __pycache__/
 *.pyc
+*.deb
+CN8000A-KVM.spec
+resources/fonts/*.ttf

@@ -4,12 +4,12 @@
 
 ## Скачать
 
-**Релиз:** [v0.1](https://github.com/eturnercus/13.07/releases/tag/v0.1)
+**Релиз:** [v0.2](https://github.com/eturnercus/13.07/releases/tag/v0.2)
 
 | Платформа | Файл | Как запустить |
 |-----------|------|---------------|
-| **Linux x86_64** | [CN8000A-KVM-x86_64.AppImage](https://github.com/eturnercus/13.07/releases/download/v0.1/CN8000A-KVM-x86_64.AppImage) | `chmod +x CN8000A-KVM-x86_64.AppImage && ./CN8000A-KVM-x86_64.AppImage` |
-| **Windows x64** | [CN8000A-KVM-Portable-Win64.zip](https://github.com/eturnercus/13.07/releases/download/v0.1/CN8000A-KVM-Portable-Win64.zip) | Распаковать → запустить `CN8000A-KVM.bat` |
+| **Linux x86_64** | [CN8000A-KVM-x86_64.AppImage](https://github.com/eturnercus/13.07/releases/download/v0.2/CN8000A-KVM-x86_64.AppImage) | `chmod +x CN8000A-KVM-x86_64.AppImage && ./CN8000A-KVM-x86_64.AppImage` |
+| **Windows x64** | [CN8000A-KVM-Portable-Win64.zip](https://github.com/eturnercus/13.07/releases/download/v0.2/CN8000A-KVM-Portable-Win64.zip) | Распаковать → запустить `CN8000A-KVM.exe` |
 
 > **Полностью портативно** — Python, Java 8 и IcedTea-Web уже внутри. Ничего ставить не нужно.
 
@@ -32,13 +32,16 @@ chmod +x CN8000A-KVM-x86_64.AppImage
 ### Windows
 
 1. Распакуйте `CN8000A-KVM-Portable-Win64.zip`.
-2. Запустите `CN8000A-KVM.bat`.
+2. Запустите **`CN8000A-KVM.exe`** (двойной клик).
 
-## Возможности v0.1
+## Возможности v0.2
 
 - Русский интерфейс, файлы перевода в `i18n/languages/*.json` (UTF-8)
 - Портативный Python 3.12 + Java 8 + IcedTea-Web
 - Подключение к CN8000A через HTTP/1.0 (совместимость с прошивкой ATEN)
+- Таймауты и понятные сообщения об ошибках (логин, пароль, сеть)
+- Единый внешний вид на Linux и Windows (шрифты, кнопки)
+- Windows: `CN8000A-KVM.exe` вместо `.bat`
 - ПКМ и Ctrl+C/V в полях ввода
 - Иконка приложения
 
